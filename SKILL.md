@@ -90,6 +90,49 @@ find . -type f \( -name "*.ts" -o -name "*.py" -o -name "*.go" -o -name "*.rs" -
 
 **これらの結果を元に**図や説明を書く。ツールが使えない環境でも `grep` ベースのフォールバックで import 関係は取れる。AIの推論で依存矢印を引くのは最終手段。
 
+#### コードロジックの事実抽出
+
+ロジックの「意図」はAIの仕事だが、**事実部分はツールで取れる**。以下を実行してからAIが解釈する:
+
+```bash
+# ── 関数シグネチャ一覧 (ctags が使えれば) ──
+ctags -R --fields=+S --output-format=json -f - . 2>/dev/null | head -200 || \
+  grep -rn "^def \|^class \|^async def \|^export function\|^export const\|^func \|^pub fn\|^pub async fn" \
+    --include="*.py" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.go" --include="*.rs" \
+    . | grep -v node_modules | grep -v __pycache__ | head -100
+
+# ── エラーハンドリング箇所 ──
+grep -rn "catch\|except\|rescue\|recover\|\.catch(\|on_error\|handle_error" \
+  --include="*.py" --include="*.ts" --include="*.js" --include="*.go" --include="*.rs" \
+  . | grep -v node_modules | head -50
+
+# ── ログ出力箇所 ──
+grep -rn "console\.\|logger\.\|log\.\|logging\.\|slog\.\|tracing::" \
+  --include="*.py" --include="*.ts" --include="*.js" --include="*.go" --include="*.rs" \
+  . | grep -v node_modules | head -50
+
+# ── 環境変数の使用箇所 ──
+grep -rn "process\.env\|os\.environ\|os\.Getenv\|env::var\|ENV\[" \
+  --include="*.py" --include="*.ts" --include="*.js" --include="*.go" --include="*.rs" \
+  . | grep -v node_modules | head -50
+
+# ── TypeScript: 型定義の抽出 ──
+grep -rn "^export \(interface\|type\|enum\)" --include="*.ts" --include="*.tsx" . | grep -v node_modules | head -50
+
+# ── Python: クラスとデコレータ ──
+grep -rn "^class \|^@" --include="*.py" . | grep -v __pycache__ | head -50
+```
+
+#### ハルシネーション防止ルール
+
+AIがコードロジックを説明するとき、以下のルールを**厳守**する:
+
+1. **引用必須**: ロジックの説明には必ず該当コードを `<pre>` で引用し、`ファイル名:行番号` を付ける。引用なしの説明は禁止
+2. **Read してから書く**: 説明対象のファイルを必ず Read ツールで開いてから書く。ファイル名やgrep結果だけ見て中身を推測して書くな
+3. **分離**: 事実 (コードがこう書かれている) と解釈 (おそらくこういう意図) を明確に分ける。解釈には「設計意図:」というラベルを付ける
+4. **不明は不明と書く**: コードの意図が読み取れない場合「このロジックの意図は明確ではない。コードは以下の通り:」と書いて原文を示す。推測で穴を埋めない
+5. **検証可能性**: 読者がクリックして該当コードを確認できるよう、ファイルパスは `<span class="file-link" data-path="...">` でリンクにする
+
 ### Step 2: Analyze — DeepWiki-style structured output
 
 Generate the wiki content in **Japanese**. Follow this exact section structure. Each section must be thorough — read actual source files, quote specific code, and explain the *why* not just the *what*.
