@@ -597,6 +597,7 @@
   <div class="nav-right">
     <a href="#how">how it works</a>
     <a href="#vs">the gap</a>
+    <a href="#roadmap">roadmap</a>
     <a class="pill" href="https://github.com/susumutomita/codewiki" target="_blank" rel="noopener">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.54-3.88-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.29 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.78 0c2.21-1.49 3.18-1.18 3.18-1.18.62 1.59.23 2.76.11 3.05.73.8 1.17 1.83 1.17 3.09 0 4.41-2.69 5.38-5.26 5.66.41.35.78 1.05.78 2.12v3.15c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
       GitHub
@@ -890,6 +891,50 @@
   <p style="font-family:var(--mono);font-size:13px;color:var(--mute);margin-top:24px;max-width:62ch">
     // same answers. same depth. no senior required.
   </p>
+</section>
+
+<section class="wrap" id="roadmap">
+  <div class="sec-head">
+    <span class="idx">&#xA7; 04</span>
+    <span class="title">ROADMAP</span>
+    <span>/ from skill to orchestrator</span>
+  </div>
+
+  <p style="font-family:var(--mono);font-size:14px;color:var(--ink-soft);max-width:62ch;margin:18px 0 24px">
+    Today codewiki runs <code class="inline-code">git log</code>, <code class="inline-code">grep</code>, <code class="inline-code">ctags</code>. That's senior-level investigation. But each ecosystem has <span class="hl">best-in-class analyzers</span> that go deeper. codewiki's next evolution: <strong>an AI orchestrator that wraps them</strong>.
+  </p>
+
+  <div class="manifest" style="border-top:1px solid var(--rule)">
+    <div class="mbig">
+      <div class="mbig-n">v1.1 — integrate</div>
+      <div class="mbig-key">specialized analyzers</div>
+      <h3>Wrap the <em>best tool</em> for each job.</h3>
+      <p class="mdesc">
+        <code>madge</code> / <code>pydeps</code> / <code>go mod graph</code> for real dependency graphs.
+        <code>radon</code> / <code>eslintcc</code> / <code>gocyclo</code> for complexity.
+        <code>dependency-cruiser</code> / <code>import-linter</code> for architecture violations.
+        codewiki runs them, parses the JSON, and weaves the findings into the wiki narrative.
+      </p>
+    </div>
+
+    <div class="mbig">
+      <div class="mbig-n">v1.2 — interactive</div>
+      <div class="mbig-key">D3 + call graphs</div>
+      <h3>Graphs you can <em>actually explore</em>.</h3>
+      <p class="mdesc">
+        Force-directed dependency graphs you drag, zoom, filter. Clickable call graphs via <code>pyan</code> and AST walks. Heatmaps overlaying complexity × change frequency — the places where risk actually lives.
+      </p>
+    </div>
+
+    <div class="mbig">
+      <div class="mbig-n">v1.3 — pluggable</div>
+      <div class="mbig-key">.codewikirc.yml</div>
+      <h3>Your tools. codewiki's <em>narrator</em>.</h3>
+      <p class="mdesc">
+        Point codewiki at any analyzer that outputs JSON. The AI reads the output and integrates it — no per-tool plugin code required. Existing static analyzers give you numbers and graphs; codewiki layers interpretation on top. <span class="hl">That's the defensibility.</span>
+      </p>
+    </div>
+  </div>
 </section>
 
 <section class="wrap end">

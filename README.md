@@ -137,6 +137,47 @@ Tested on:
 - **AWS CDK / Terraform** — infrastructure as code
 - **Monorepos** — multi-package projects
 
+## Roadmap — from skill to orchestrator
+
+Today codewiki runs `git log`, `grep`, `ctags` and similar. That's already senior-level investigation. But real code understanding needs more specialized tools — and each ecosystem has best-in-class analyzers. **codewiki's next evolution is as an AI orchestrator that wraps them.**
+
+### v1.1 — integrate specialized analyzers
+
+| Need | Tool codewiki will invoke | What you get |
+| --- | --- | --- |
+| Module dependencies | `madge`, `pydeps`, `go mod graph`, `cargo tree` | Enhanced Mermaid graphs from real tool output |
+| Cyclomatic complexity | `radon`, `eslintcc`, `gocyclo` | Per-function complexity table + hotspot list |
+| Change hotspots | `git log` frequency analysis | CodeScene-style "where the risk lives" map |
+| Architecture violations | `dependency-cruiser`, `import-linter` | Layer rule violations flagged with explanations |
+| Symbol extraction | `ctags`, `tree-sitter` | Accurate class/function maps for diagrams |
+
+### v1.2 — interactive visualizations
+
+- D3-based force-directed dependency graphs (drag, zoom, filter) embedded in the wiki
+- Clickable call graphs via `pyan` / AST walks
+- Heatmap overlays (complexity × change frequency)
+
+### v1.3 — plugin system
+
+```yaml
+# .codewikirc.yml
+analyzers:
+  - name: madge
+    run: "npx madge --json src/"
+    parse: "json"
+  - name: custom-tool
+    run: "./my-analyzer.sh"
+    parse: "json"
+```
+
+Any analyzer that outputs JSON can be plugged in. Claude Code reads the output and integrates it into the wiki narrative automatically — no per-tool plugin code needed.
+
+### The strategic bet
+
+Existing static analyzers (SonarQube, CodeScene, Sourcegraph) give you **numbers and graphs**. Interpretation is left to the reader. codewiki layers **AI-driven interpretation** on top: correlating tool outputs, linking findings to specific code, explaining *why* this hotspot matters in *this* codebase.
+
+*The integration is where the defensibility lives.*
+
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
