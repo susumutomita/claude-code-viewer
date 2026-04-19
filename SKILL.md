@@ -90,165 +90,274 @@ http.server.HTTPServer(('',8080),H).serve_forever()
 
 Tell the user the wiki is ready at http://localhost:8080.
 
-## HTML Template
+## Design System for Generated Wiki
 
-When generating `.codewiki/index.html`, use this structure. Replace `{{CONTENT}}` placeholders with the actual analysis content you wrote:
+The generated `.codewiki/index.html` MUST use the **mono-brutalist** design system. This is critical — the wiki should look as polished as the landing page.
+
+### Design tokens (use these exactly)
+
+- **Fonts**: `'Geist Mono'` for body/code, `'Geist'` for headings, `'Instrument Serif'` for italic accents
+- **Load fonts**: `<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">`
+- **Background**: `#ECE8DE` (warm paper)
+- **Ink**: `#0B0B0B` (near-black)
+- **Muted text**: `#6E6A5E`
+- **Accent**: `#5E4AE3` (deep indigo)
+- **Rules/borders**: `1px solid #0B0B0B`
+- **Code blocks**: background `#E4DFD3`, border `1px solid #0B0B0B`
+- **No border-radius** on major containers (0px or 0). Only subtle radius on small UI elements.
+- **No emoji icons**. Use typographic elements, section numbers (§ 01, § 02), and dashes.
+- **Section headers**: small uppercase mono labels like `§ 01 — OVERVIEW / architecture`
+- **Headings**: large Geist Sans bold with tight letter-spacing (-0.035em)
+- **Box shadows**: `4px 4px 0 #0B0B0B` (hard offset, not blurred)
+- **Highlight**: `background: #EEFF57` for important terms, not colored badges
+
+### HTML structure to follow
 
 ```html
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PROJECT_NAME — Code Wiki</title>
+<title>PROJECT_NAME — codewiki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d1117;--bg-card:#161b22;--bg-code:#1c2128;--border:#30363d;--text:#e6edf3;--text-muted:#8b949e;--accent:#58a6ff;--accent-green:#3fb950;--accent-orange:#d29922;--accent-red:#f85149;--accent-purple:#bc8cff;--claude-bg:#1a1520;--claude-border:#6e40aa;--sidebar-w:260px}
+:root{--bg:#ECE8DE;--bg-2:#E4DFD3;--ink:#0B0B0B;--ink-soft:#2A2A28;--mute:#6E6A5E;--rule:#0B0B0B;--rule-soft:#BEB8A8;--accent:#5E4AE3;--accent-ink:#fff;--hl:#EEFF57;--ok:#15803D;--sans:'Geist',system-ui,sans-serif;--mono:'Geist Mono','SF Mono',monospace;--serif:'Instrument Serif',serif;--sidebar-w:260px;--gutter:32px}
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:14px}
-.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:var(--bg-card);border-right:1px solid var(--border);overflow-y:auto;z-index:100;padding:20px 0}
-.sidebar-logo{padding:0 20px 16px;border-bottom:1px solid var(--border);margin-bottom:12px}
-.sidebar-logo h2{font-size:14px;color:var(--accent);font-weight:600}
-.sidebar-logo p{font-size:11px;color:var(--text-muted);margin-top:2px}
-.nav-section{padding:12px 20px 4px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px}
-.nav-link{display:block;padding:5px 20px 5px 28px;font-size:13px;color:var(--text-muted);text-decoration:none;border-left:2px solid transparent;transition:all .15s}
-.nav-link:hover,.nav-link.active{color:var(--text);background:rgba(88,166,255,.06);border-left-color:var(--accent)}
-.main{margin-left:var(--sidebar-w);padding:40px 60px 100px;max-width:920px}
-h1{font-size:28px;margin-bottom:6px}h1 small{font-size:13px;color:var(--text-muted);font-weight:400;display:block;margin-top:4px}
-h2{font-size:22px;margin:48px 0 16px;padding-top:24px;border-top:1px solid var(--border)}
-h3{font-size:17px;margin:28px 0 10px;color:var(--accent)}
-h4{font-size:14px;margin:20px 0 8px;color:var(--accent-purple)}
-p{margin-bottom:10px}li{margin:3px 0 3px 20px}
-.card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0}
-pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:16px;overflow-x:auto;font-size:12.5px;line-height:1.5;margin:12px 0}
-code{font-family:'SF Mono','Fira Code',monospace;font-size:12.5px}
-.inline-code{background:var(--bg-code);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px}
-.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;margin:2px}
-.badge-blue{background:rgba(88,166,255,.15);color:var(--accent)}
-.badge-green{background:rgba(63,185,80,.15);color:var(--accent-green)}
-.badge-orange{background:rgba(210,153,34,.15);color:var(--accent-orange)}
-.badge-purple{background:rgba(188,140,255,.15);color:var(--accent-purple)}
-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
-th,td{padding:8px 12px;border:1px solid var(--border);text-align:left}
-th{background:var(--bg-card);font-weight:600;color:var(--accent);font-size:12px}
-.section-content{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:24px;margin:12px 0}
-.file-tree{font-family:'SF Mono',monospace;font-size:12.5px;line-height:1.8}
-.file-tree .dir{color:var(--accent);font-weight:600}.file-tree .file{color:var(--text);cursor:pointer}
-.file-tree .file:hover{color:var(--accent-purple);text-decoration:underline}
-.file-tree li{list-style:none;padding-left:20px;border-left:1px solid var(--border)}.file-tree>li{border-left:none;padding-left:0}
-.claude-box{background:var(--claude-bg);border:1px solid var(--claude-border);border-radius:8px;padding:12px 16px;margin:12px 0}
-.claude-prompt{background:#0d1117;border:1px solid var(--claude-border);border-radius:6px;padding:10px 100px 10px 12px;font-family:'SF Mono',monospace;font-size:12.5px;color:#e6edf3;display:block;width:100%;position:relative;cursor:pointer;white-space:pre-wrap;word-break:break-word}
-.claude-prompt:hover{border-color:#a371f7}
-.copy-btn,.ask-btn{position:absolute;top:50%;transform:translateY(-50%);border:none;color:white;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;opacity:.7;transition:opacity .15s}
-.copy-btn{right:8px;background:var(--border)}.ask-btn{right:55px;background:var(--claude-border)}
-.copy-btn:hover,.ask-btn:hover{opacity:1}
-.ctx-item{padding:8px 14px;font-size:13px;cursor:pointer;border-radius:4px;color:var(--text);display:flex;align-items:center}
-.ctx-item:hover{background:rgba(110,64,170,.2)}
-.chat-msg{margin-bottom:12px;display:flex}.chat-msg.user{justify-content:flex-end}.chat-msg.bot{justify-content:flex-start}
-.chat-bubble{max-width:90%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;word-break:break-word}
-.chat-msg.user .chat-bubble{background:var(--claude-border);color:white;border-bottom-right-radius:4px}
-.chat-msg.bot .chat-bubble{background:var(--bg-code);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px}
-.chat-bubble pre{margin:8px 0;padding:10px;border-radius:6px;background:var(--bg);border:1px solid var(--border);overflow-x:auto;font-size:12px}
-.typing-indicator{display:inline-flex;gap:4px;padding:4px 0}
-.typing-indicator span{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:typing 1.2s infinite}
-.typing-indicator span:nth-child(2){animation-delay:.2s}.typing-indicator span:nth-child(3){animation-delay:.4s}
-@keyframes typing{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent-green);color:#000;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:1000}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.file-reader-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin:16px 0;overflow:hidden}
-.file-reader-header{padding:10px 16px;background:var(--bg-code);border-bottom:1px solid var(--border);display:flex;gap:8px}
-.file-reader-header input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;font-family:'SF Mono',monospace;outline:none}
-.file-reader-header input:focus{border-color:var(--accent)}
-.file-reader-header button{background:var(--accent);border:none;color:#000;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+body{font-family:var(--mono);font-size:14px;line-height:1.65;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+/* grid overlay */
+body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(to right,var(--rule-soft) 1px,transparent 1px);background-size:calc(100%/12) 100%;opacity:.25;pointer-events:none;z-index:0;mix-blend-mode:multiply}
+
+/* nav */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:14px var(--gutter);border-bottom:1px solid var(--rule);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);background:var(--bg);position:sticky;top:0;z-index:50}
+.nav .brand{font-family:var(--sans);font-weight:800;font-size:18px;letter-spacing:-.03em;text-transform:none;color:var(--ink)}
+.nav .brand .sl{color:var(--accent);font-family:var(--mono);font-weight:500;margin:0 4px}
+
+/* sidebar */
+.sidebar{position:fixed;top:52px;left:0;bottom:0;width:var(--sidebar-w);border-right:1px solid var(--rule);overflow-y:auto;z-index:40;padding:20px 0;background:var(--bg)}
+.sidebar .sec-label{padding:14px 20px 6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--mute)}
+.sidebar .nav-link{display:block;padding:5px 20px 5px 24px;font-size:13px;color:var(--mute);border-left:2px solid transparent;transition:all .12s}
+.sidebar .nav-link:hover,.sidebar .nav-link.active{color:var(--ink);border-left-color:var(--accent)}
+
+/* main */
+.main{margin-left:var(--sidebar-w);padding:40px var(--gutter) 100px;max-width:900px;position:relative;z-index:1}
+
+/* typography */
+h1{font-family:var(--sans);font-weight:800;letter-spacing:-.04em;font-size:clamp(36px,5vw,56px);line-height:.95;margin-bottom:20px}
+h1 em{font-family:var(--serif);font-style:italic;font-weight:400}
+h2{font-family:var(--sans);font-weight:700;letter-spacing:-.03em;font-size:28px;line-height:1;margin:56px 0 8px;padding-top:24px;border-top:1px solid var(--rule)}
+h3{font-family:var(--sans);font-weight:600;font-size:18px;letter-spacing:-.015em;margin:28px 0 8px}
+h4{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);margin:20px 0 8px}
+p{margin-bottom:10px;color:var(--ink-soft)}
+strong{color:var(--ink)}
+li{margin:3px 0 3px 20px;color:var(--ink-soft)}
+
+/* section header bar */
+.sec-head{display:grid;grid-template-columns:60px 1fr auto;gap:16px;align-items:baseline;padding:14px 0 8px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);border-bottom:1px solid var(--rule);margin-bottom:24px}
+.sec-head .idx{color:var(--ink)}
+.sec-head .title{color:var(--ink)}
+
+/* content blocks */
+.section-content{border:1px solid var(--rule);background:var(--bg-2);padding:28px;margin:16px 0}
+.section-content h2{border:none;margin:28px 0 8px;padding:0;font-size:22px}
+.section-content h3{margin:20px 0 6px}
+
+/* code */
+pre{background:var(--bg-2);border:1px solid var(--rule);padding:16px;overflow-x:auto;font-size:12.5px;line-height:1.5;margin:12px 0;font-family:var(--mono)}
+code{font-family:var(--mono);font-size:12.5px}
+.inline-code{background:var(--bg-2);border:1px solid var(--rule-soft);padding:1px 5px;font-size:12px}
+
+/* tables */
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;font-family:var(--mono)}
+th,td{padding:10px 14px;border:1px solid var(--rule);text-align:left}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);font-weight:500}
+
+/* highlight */
+.hl{background:var(--hl);padding:0 .1em;color:var(--ink)}
+
+/* file tree */
+.file-tree{font-family:var(--mono);font-size:12.5px;line-height:1.8}
+.file-tree .dir{color:var(--accent);font-weight:600}
+.file-tree .file{color:var(--ink);cursor:pointer}
+.file-tree .file:hover{color:var(--accent);text-decoration:underline}
+.file-tree li{list-style:none;padding-left:20px;border-left:1px solid var(--rule-soft)}
+.file-tree>li{border-left:none;padding-left:0}
+
+/* ask prompt blocks */
+.ask-block{border:1px solid var(--rule);background:var(--bg-2);padding:12px 16px;margin:12px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:background .12s}
+.ask-block:hover{background:var(--ink);color:var(--bg)}
+.ask-block .prompt-text{font-size:13px;color:var(--ink-soft)}
+.ask-block:hover .prompt-text{color:var(--bg)}
+.ask-block .ask-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);white-space:nowrap;font-weight:500}
+.ask-block:hover .ask-label{color:var(--hl)}
+
+/* file reader */
+.file-reader{border:1px solid var(--rule);margin:16px 0;overflow:hidden}
+.file-reader-bar{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--rule);background:var(--bg-2)}
+.file-reader-bar input{flex:1;background:var(--bg);border:1px solid var(--rule);padding:6px 10px;color:var(--ink);font-size:12px;font-family:var(--mono);outline:none}
+.file-reader-bar input:focus{border-color:var(--accent)}
+.file-reader-bar button{background:var(--ink);color:var(--bg);border:none;padding:6px 14px;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+.file-reader-bar button:hover{background:var(--accent);color:var(--accent-ink)}
 .file-reader-content{max-height:500px;overflow:auto}
-.file-reader-content pre{margin:0;border:none;border-radius:0}
-#chatInput:focus{border-color:var(--claude-border)}
+.file-reader-content pre{margin:0;border:none}
+
+/* context menu */
+.ctx{display:none;position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--ink);min-width:220px;box-shadow:4px 4px 0 var(--ink);font-size:12px}
+.ctx .row{padding:8px 12px;display:flex;justify-content:space-between;gap:20px;color:var(--ink-soft);border-bottom:1px dashed var(--rule-soft);cursor:pointer;white-space:nowrap}
+.ctx .row:last-child{border-bottom:none}
+.ctx .row:hover,.ctx .row.hot{background:var(--accent);color:var(--accent-ink)}
+.ctx .row .k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.ctx .row:hover .k,.ctx .row.hot .k{color:var(--accent-ink);opacity:.8}
+
+/* chat */
+.chat-fab{position:fixed;bottom:20px;right:20px;z-index:1000;width:48px;height:48px;border:1px solid var(--ink);background:var(--bg);box-shadow:4px 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:var(--mono);font-size:16px;transition:background .12s}
+.chat-fab:hover{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chat-panel{display:none;position:fixed;bottom:80px;right:20px;z-index:1000;width:420px;max-height:65vh;border:1px solid var(--ink);background:var(--bg);box-shadow:4px 4px 0 var(--ink);flex-direction:column}
+.chat-panel .ch-head{padding:10px 14px;border-bottom:1px solid var(--rule);font-size:11px;text-transform:uppercase;letter-spacing:.1em;display:flex;justify-content:space-between;align-items:center;color:var(--mute)}
+.chat-panel .ch-head b{color:var(--ink)}
+.chat-panel .ch-close{cursor:pointer}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;max-height:calc(65vh - 100px);min-height:160px}
+.chat-msg{margin-bottom:10px;display:flex}
+.chat-msg.user{justify-content:flex-end}
+.chat-msg .bubble{max-width:85%;padding:8px 12px;font-size:13px;line-height:1.5;word-break:break-word}
+.chat-msg.user .bubble{background:var(--ink);color:var(--bg)}
+.chat-msg.bot .bubble{background:var(--bg-2);border:1px solid var(--rule);color:var(--ink)}
+.chat-msg.bot .bubble pre{margin:6px 0;padding:8px;background:var(--bg);border:1px solid var(--rule);overflow-x:auto;font-size:12px}
+.chat-input-row{display:flex;gap:8px;padding:10px;border-top:1px solid var(--rule)}
+.chat-input-row input{flex:1;background:var(--bg);border:1px solid var(--rule);padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:13px;outline:none}
+.chat-input-row input:focus{border-color:var(--accent)}
+.chat-input-row button{background:var(--ink);color:var(--bg);border:none;padding:8px 14px;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+.chat-input-row button:hover{background:var(--accent);color:var(--accent-ink)}
+.typing-ind{display:inline-flex;gap:3px;padding:4px 0}
+.typing-ind span{width:5px;height:5px;background:var(--mute);animation:tblink 1.2s infinite}
+.typing-ind span:nth-child(2){animation-delay:.2s}
+.typing-ind span:nth-child(3){animation-delay:.4s}
+@keyframes tblink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:var(--bg);padding:8px 18px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:0;transition:all .25s;z-index:2000}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
 @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:20px}}
-::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-strong{color:var(--text)}
 </style>
 </head>
 <body>
 
-<!-- SIDEBAR: Generate nav links for each section you create -->
+<!-- NAV -->
+<header class="nav">
+  <span class="brand">PROJECT_NAME<span class="sl">/</span></span>
+  <span>codewiki</span>
+</header>
+
+<!-- SIDEBAR: Generate nav links for each section -->
 <nav class="sidebar">
-  <div class="sidebar-logo"><h2>PROJECT_NAME</h2><p>Code Wiki</p></div>
-  <!-- Add nav-link entries for each h2 section -->
+  <div class="sec-label">Documentation</div>
+  <!-- Add .nav-link entries for each h2 section -->
+  <div class="sec-label" style="margin-top:16px">Explore</div>
+  <a class="nav-link" href="#file-tree">File Tree</a>
+  <a class="nav-link" href="#file-reader">File Reader</a>
 </nav>
 
 <div class="main">
-<h1>PROJECT_NAME<small>Code Wiki — Generated by Claude Code</small></h1>
+<h1>PROJECT_NAME</h1>
+<p style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);margin-bottom:32px">
+  codewiki · generated TIMESTAMP · full rebuild
+</p>
 
-<div class="card" style="border-color:var(--accent-green)">
-  <div style="font-size:12px;font-weight:600;color:var(--accent-green);margin-bottom:6px">Interactive Features</div>
-  <ul style="font-size:13px;color:var(--text-muted);margin-left:16px">
-    <li><strong>Chat</strong> — right bottom button to ask anything</li>
-    <li><strong>Right-click</strong> — select text, right-click → Ask Claude Code</li>
-    <li><strong>Ask</strong> — click Ask button on suggested prompts</li>
-    <li><strong>File Reader</strong> — browse source, select & right-click to ask</li>
-  </ul>
+<div style="border:1px solid var(--rule);padding:14px 18px;margin-bottom:40px;font-size:13px;color:var(--ink-soft)">
+  <strong>Right-click</strong> any text to ask Claude Code.
+  Use the <strong>chat</strong> (bottom-right) for free-form questions.
+  Click <strong>Ask</strong> on prompts below each section to deep-dive.
 </div>
 
-<!-- YOUR ANALYSIS CONTENT HERE -->
-<!-- Use h2 for major sections, h3 for subsections -->
-<!-- Wrap analysis text in <div class="section-content"> -->
-<!-- Add claude-box with suggested prompts after each section -->
-<!-- Include a File Tree section and File Reader section at the end -->
+<!-- ANALYSIS CONTENT HERE -->
+<!--
+  For each section use this structure:
+  
+  <div class="sec-head">
+    <span class="idx">§ 01</span>
+    <span class="title">SECTION NAME</span>
+    <span>/ label</span>
+  </div>
+  
+  <div class="section-content">
+    YOUR ANALYSIS HTML HERE
+  </div>
+  
+  <div class="ask-block" onclick="sendChat('follow-up question text')">
+    <span class="prompt-text">A suggested follow-up question about this section</span>
+    <span class="ask-label">Ask →</span>
+  </div>
+-->
+
+<!-- FILE TREE SECTION -->
+<!-- <h2 id="file-tree">File Tree</h2> ... -->
+
+<!-- FILE READER SECTION -->
+<!--
+<h2 id="file-reader">File Reader</h2>
+<div class="file-reader">
+  <div class="file-reader-bar">
+    <input id="filePathInput" type="text" placeholder="path/to/file.ts" onkeydown="if(event.key==='Enter')loadFile()">
+    <button onclick="loadFile()">Open</button>
+  </div>
+  <div class="file-reader-content" id="fileContent">
+    <pre style="color:var(--mute);padding:20px;text-align:center">Click a file in the tree or type a path</pre>
+  </div>
+</div>
+-->
 
 </div>
 
-<!-- Context Menu (copy exactly) -->
-<div id="contextMenu" style="display:none;position:fixed;z-index:9999;background:var(--bg-card);border:1px solid var(--claude-border);border-radius:8px;padding:4px;min-width:240px;box-shadow:0 8px 30px rgba(0,0,0,.5)">
-<div id="ctxAsk" class="ctx-item">&#x1F916;&nbsp; Claude Code に聞く</div>
-<div id="ctxExplain" class="ctx-item">&#x1F4A1;&nbsp; この部分を解説して</div>
-<div id="ctxDeep" class="ctx-item">&#x1F50D;&nbsp; コードを深掘りして</div>
-<div style="border-top:1px solid var(--border);margin:4px 0"></div>
-<div id="ctxCopy" class="ctx-item" style="color:var(--text-muted)">&#x1F4CB;&nbsp; コピー</div>
+<!-- Context Menu -->
+<div class="ctx" id="contextMenu">
+  <div class="row hot" id="ctxAsk"><span>Ask Claude Code</span><span class="k">⌘K</span></div>
+  <div class="row" id="ctxExplain"><span>Explain this</span><span class="k">⌘E</span></div>
+  <div class="row" id="ctxDeep"><span>Find in source</span><span class="k">⌘F</span></div>
+  <div class="row" id="ctxCopy"><span>Copy</span><span class="k">⌘C</span></div>
 </div>
 
-<!-- Chat Widget (copy exactly) -->
-<div id="chatWidget" style="position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;align-items:flex-end;gap:12px">
-<div id="chatPanel" style="display:none;width:480px;max-height:70vh;background:var(--bg-card);border:1px solid var(--claude-border);border-radius:12px;overflow:hidden;box-shadow:0 12px 40px rgba(110,64,170,.3);flex-direction:column">
-<div style="padding:14px 16px;background:linear-gradient(135deg,#1a1520,#2d1b4e);border-bottom:1px solid var(--claude-border);display:flex;align-items:center;justify-content:space-between">
-<div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--accent-green)"></div><span style="font-size:14px;font-weight:600">Claude Code</span><span style="font-size:11px;color:var(--text-muted)">connected</span></div>
-<button onclick="toggleChat()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px">&times;</button>
-</div>
-<div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;max-height:calc(70vh - 130px);min-height:200px">
-<div class="chat-msg bot"><div class="chat-bubble">このプロジェクトについて何でも聞いてください。</div></div>
-</div>
-<div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px">
-<input id="chatInput" type="text" placeholder="質問を入力..." style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')sendChat()">
-<button onclick="sendChat()" style="background:var(--claude-border);border:none;color:white;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;font-weight:600">送信</button>
-</div></div>
-<button id="chatFab" onclick="toggleChat()" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6e40aa,#9b59b6);border:none;color:white;font-size:24px;cursor:pointer;box-shadow:0 4px 20px rgba(110,64,170,.5);transition:transform .2s;display:flex;align-items:center;justify-content:center" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">&#x1F916;</button>
+<!-- Chat Widget -->
+<div class="chat-fab" id="chatFab" onclick="toggleChat()">?</div>
+<div class="chat-panel" id="chatPanel">
+  <div class="ch-head"><b>Claude Code</b><span class="ch-close" onclick="toggleChat()">close ✕</span></div>
+  <div class="chat-msgs" id="chatMessages">
+    <div class="chat-msg bot"><div class="bubble">Ask anything about this codebase.</div></div>
+  </div>
+  <div class="chat-input-row">
+    <input id="chatInput" type="text" placeholder="Ask a question..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button onclick="sendChat()">Send</button>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
 let chatOpen=false;
-function toggleChat(){chatOpen=!chatOpen;const p=document.getElementById('chatPanel'),f=document.getElementById('chatFab');p.style.display=chatOpen?'flex':'none';f.innerHTML=chatOpen?'&times;':'&#x1F916;';if(chatOpen){document.getElementById('chatInput').focus();scrollChat()}}
-function scrollChat(){const m=document.getElementById('chatMessages');m.scrollTop=m.scrollHeight}
+function toggleChat(){chatOpen=!chatOpen;document.getElementById('chatPanel').style.display=chatOpen?'flex':'none';document.getElementById('chatFab').style.display=chatOpen?'none':'flex';if(chatOpen)document.getElementById('chatInput').focus()}
 function escH(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function renderMd(t){return t.replace(/```(\w*)\n([\s\S]*?)```/g,'<pre><code>$2</code></pre>').replace(/`([^`]+)`/g,'<code class="inline-code">$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
-function addMsg(text,role){const m=document.getElementById('chatMessages'),d=document.createElement('div');d.className='chat-msg '+role;const b=document.createElement('div');b.className='chat-bubble';b.innerHTML=role==='bot'?renderMd(text):escH(text);d.appendChild(b);m.appendChild(d);scrollChat()}
-function addTyping(){const m=document.getElementById('chatMessages'),d=document.createElement('div');d.className='chat-msg bot';d.id='typingMsg';d.innerHTML='<div class="chat-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';m.appendChild(d);scrollChat()}
+function addMsg(t,r){const m=document.getElementById('chatMessages'),d=document.createElement('div');d.className='chat-msg '+r;const b=document.createElement('div');b.className='bubble';b.innerHTML=r==='bot'?renderMd(t):escH(t);d.appendChild(b);m.appendChild(d);m.scrollTop=m.scrollHeight}
+function addTyping(){const m=document.getElementById('chatMessages'),d=document.createElement('div');d.className='chat-msg bot';d.id='typingMsg';d.innerHTML='<div class="bubble"><div class="typing-ind"><span></span><span></span><span></span></div></div>';m.appendChild(d);m.scrollTop=m.scrollHeight}
 function rmTyping(){const e=document.getElementById('typingMsg');if(e)e.remove()}
-async function sendChat(prefill){const input=document.getElementById('chatInput'),q=prefill||input.value.trim();if(!q)return;input.value='';if(!chatOpen)toggleChat();addMsg(q,'user');addTyping();try{const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});rmTyping();if(r.ok){const d=await r.json();addMsg(d.answer||'(empty)','bot')}else{const e=await r.json().catch(()=>({}));addMsg('Error: '+(e.error||r.statusText),'bot')}}catch(e){rmTyping();addMsg('Server not reachable.','bot')}}
-let selectedText='';
-document.addEventListener('contextmenu',e=>{const sel=window.getSelection().toString().trim();if(!sel)return;e.preventDefault();selectedText=sel;const menu=document.getElementById('contextMenu');menu.style.display='block';let x=e.clientX,y=e.clientY;if(x+menu.offsetWidth>window.innerWidth)x=window.innerWidth-menu.offsetWidth-8;if(y+menu.offsetHeight>window.innerHeight)y=window.innerHeight-menu.offsetHeight-8;menu.style.left=x+'px';menu.style.top=y+'px'});
+async function sendChat(pre){const i=document.getElementById('chatInput'),q=pre||i.value.trim();if(!q)return;i.value='';if(!chatOpen)toggleChat();addMsg(q,'user');addTyping();try{const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});rmTyping();if(r.ok){const d=await r.json();addMsg(d.answer||'(empty)','bot')}else{addMsg('Error','bot')}}catch(e){rmTyping();addMsg('Server not reachable.','bot')}}
+let sel='';
+document.addEventListener('contextmenu',e=>{const s=window.getSelection().toString().trim();if(!s)return;e.preventDefault();sel=s;const m=document.getElementById('contextMenu');m.style.display='block';let x=e.clientX,y=e.clientY;if(x+m.offsetWidth>innerWidth)x=innerWidth-m.offsetWidth-8;if(y+m.offsetHeight>innerHeight)y=innerHeight-m.offsetHeight-8;m.style.left=x+'px';m.style.top=y+'px'});
 document.addEventListener('click',()=>{document.getElementById('contextMenu').style.display='none'});
-document.getElementById('ctxAsk').onclick=()=>sendChat('"'+selectedText+'"について詳しく教えて');
-document.getElementById('ctxExplain').onclick=()=>sendChat('以下を解説して:\n'+selectedText);
-document.getElementById('ctxDeep').onclick=()=>sendChat('"'+selectedText+'"に関連するソースコードを読んで実装詳細を教えて');
-document.getElementById('ctxCopy').onclick=()=>{navigator.clipboard.writeText(selectedText);showToast('Copied!')};
-document.querySelectorAll('.claude-prompt').forEach(el=>{const a=document.createElement('button');a.className='ask-btn';a.textContent='Ask';a.onclick=e=>{e.stopPropagation();sendChat(el.textContent.replace('Copy','').replace('Ask','').trim())};el.appendChild(a)});
-async function loadFile(){const p=document.getElementById('filePathInput').value.trim(),c=document.getElementById('fileContent');if(!p)return;c.innerHTML='<pre style="color:var(--text-muted);padding:20px">Loading...</pre>';try{const r=await fetch('/api/file?path='+encodeURIComponent(p));if(r.ok){const d=await r.json();c.innerHTML='<pre><code>'+escH(d.content)+'</code></pre>'}else{const e=await r.json().catch(()=>({}));c.innerHTML='<pre style="color:var(--accent-red);padding:20px">'+escH(e.error||'Not found')+'</pre>'}}catch(e){c.innerHTML='<pre style="color:var(--accent-red);padding:20px">Cannot connect</pre>'}}
+document.getElementById('ctxAsk').onclick=()=>sendChat('"'+sel+'" — explain this in detail');
+document.getElementById('ctxExplain').onclick=()=>sendChat('Explain: '+sel);
+document.getElementById('ctxDeep').onclick=()=>sendChat('Find "'+sel+'" in the source code and explain the implementation');
+document.getElementById('ctxCopy').onclick=()=>{navigator.clipboard.writeText(sel);showToast('copied')};
+async function loadFile(){const p=document.getElementById('filePathInput').value.trim(),c=document.getElementById('fileContent');if(!p)return;c.innerHTML='<pre style="color:var(--mute);padding:20px">loading...</pre>';try{const r=await fetch('/api/file?path='+encodeURIComponent(p));if(r.ok){const d=await r.json();c.innerHTML='<pre><code>'+escH(d.content)+'</code></pre>'}else{c.innerHTML='<pre style="color:var(--ink);padding:20px">not found</pre>'}}catch(e){c.innerHTML='<pre style="padding:20px">cannot connect</pre>'}}
 document.querySelectorAll('.file-tree .file').forEach(el=>{el.addEventListener('click',()=>{let parts=[el.textContent],node=el.closest('li');while(node.parentElement&&node.parentElement.closest('li')){node=node.parentElement.closest('li');const d=node.querySelector(':scope > .dir');if(d)parts.unshift(d.textContent.replace('/',''))}document.getElementById('filePathInput').value=parts.join('/');loadFile();document.getElementById('file-reader').scrollIntoView({behavior:'smooth'})})});
-function copyPrompt(el){navigator.clipboard.writeText(el.textContent.replace('Copy','').replace('Ask','').trim()).then(()=>showToast('Copied!'))}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
-const navLinks=document.querySelectorAll('.nav-link');
+const navLinks=document.querySelectorAll('.sidebar .nav-link');
 const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){navLinks.forEach(l=>l.classList.remove('active'));const l=document.querySelector('.nav-link[href="#'+e.target.id+'"]');if(l)l.classList.add('active')}})},{rootMargin:'-20% 0px -70% 0px'});
-document.querySelectorAll('h2[id],h1[id]').forEach(s=>obs.observe(s));
+document.querySelectorAll('h2[id]').forEach(s=>obs.observe(s));
 </script>
 </body>
 </html>
