@@ -115,6 +115,95 @@ find . -type f \( -name "*.ts" -o -name "*.py" -o -name "*.go" -o -name "*.rs" -
 
 **これらの結果を元に**図や説明を書く。ツールが使えない環境でも `grep` ベースのフォールバックで import 関係は取れる。AIの推論で依存矢印を引くのは最終手段。
 
+### Step 1.6: Specialized analyzers (v1.1 — 各エコシステムの best-in-class を統合)
+
+コードの依存関係を「見える化」するだけなら grep でも足りる。しかし**複雑度・ホットスポット・アーキテクチャ違反**といった深い洞察は専用ツールに任せる方が圧倒的に正確で、トークンも節約できる。
+
+以下のツールを**インストールされていれば実行**、なければ静かにスキップする。結果はすべて wiki の **§ Metrics & Health** セクションに統合する。
+
+```bash
+# ============================================================
+# Dependency graphs (モジュール依存の正確な抽出)
+# ============================================================
+
+# JS/TS: madge — circular deps, orphans, dependency tree
+npx --yes madge --json src/ 2>/dev/null > /tmp/codewiki-madge.json
+npx --yes madge --circular --json src/ 2>/dev/null > /tmp/codewiki-circular.json
+# → circular deps があれば Metrics & Health に赤旗を立てる
+
+# Python: pydeps or pipdeptree
+pydeps --noshow --show-deps --max-bacon=3 -o /tmp/codewiki-pydeps.svg . 2>/dev/null || \
+  pipdeptree --json 2>/dev/null > /tmp/codewiki-pipdeps.json
+
+# Go: すでに上で取得済み (go mod graph)
+
+# Rust: cargo tree --prefix depth (より詳細)
+cargo tree --prefix depth --format "{p}" 2>/dev/null > /tmp/codewiki-cargo.txt
+
+# ============================================================
+# Cyclomatic complexity (リファクタ候補の特定)
+# ============================================================
+
+# Python: radon (CC: cyclomatic, MI: maintainability index)
+radon cc -j -s . 2>/dev/null > /tmp/codewiki-radon-cc.json
+radon mi -j . 2>/dev/null > /tmp/codewiki-radon-mi.json
+# → CC が C (>10) 以上の関数を hotspot 候補として抽出
+
+# JS/TS: eslintcc (or eslint with complexity rule)
+npx --yes eslintcc --format json 'src/**/*.{ts,tsx,js,jsx}' 2>/dev/null > /tmp/codewiki-eslintcc.json
+
+# Go: gocyclo
+gocyclo -top 30 . 2>/dev/null > /tmp/codewiki-gocyclo.txt
+
+# ============================================================
+# Architecture violations (レイヤ違反の検出)
+# ============================================================
+
+# JS/TS: dependency-cruiser (プロジェクトに .dependency-cruiser.js があれば検出)
+npx --yes depcruise --validate --output-type json src 2>/dev/null > /tmp/codewiki-depcruise.json
+
+# Python: import-linter (.importlinter があれば)
+lint-imports --json 2>/dev/null > /tmp/codewiki-import-linter.json
+
+# ============================================================
+# Hot spot analysis (変更頻度 × 複雑度)
+# ============================================================
+
+# 変更頻度 (過去6ヶ月)
+git log --since="6 months ago" --name-only --pretty=format: 2>/dev/null | \
+  sort | uniq -c | sort -rn | head -50 > /tmp/codewiki-churn.txt
+
+# Coupling: よく一緒に変更されるファイル (logical coupling)
+# (単純版: 同じコミットに出てくるファイル群)
+git log --name-only --pretty=format:"---%h" --since="6 months ago" 2>/dev/null > /tmp/codewiki-coupling.txt
+```
+
+#### Analyzer 結果の使い方 (重要)
+
+**ツールの生出力をそのまま wiki に貼るな。** AIはツール出力を読んで、**このリポジトリの文脈で解釈**して wiki に書く:
+
+| ツール出力 | 弱い統合 (やるな) | 良い統合 (やる) |
+|---|---|---|
+| madge の circular deps | 「循環依存が3件あります」 | 「循環依存3件のうち <span class="file-link" data-path="src/auth/session.ts">src/auth/session.ts</span> ⇔ <span class="file-link" data-path="src/auth/token.ts">src/auth/token.ts</span> は § 03 で解説した認証フローの中核。テストがしづらい構造になっており、PR #47 でも議論されている」 |
+| radon CC | 「複雑度 25 の関数があります」 | 「<code>processOrder</code> (<code>orders.py:142</code>, CC=25) が最も複雑。直近3ヶ月で8回変更されており (churn上位)、hotspot候補。§ 03 Order モジュールで解説した決済フローの分岐が集中している」 |
+| churn ranking | 「一番変更されたファイルは X」 | 「churn Top 5 のうち3つが <code>services/payment/</code> 配下。決済周りが最もリスクの高いエリアで、PR #89, #102, #118 で連続修正されている」 |
+
+**相関を出す**のが codewiki の価値:
+- churn × complexity → **hotspot** (リスクの高い場所)
+- circular deps × test coverage → **fragility**
+- architecture violations × 最近の変更 → **drift** (設計が壊れつつある兆候)
+
+### Step 1.7: 既存分析ツール出力ファイルの取り込み
+
+プロジェクトに以下のファイルがあれば読み込み、Metrics & Health に統合する:
+- `coverage/coverage-summary.json` (Istanbul/nyc)
+- `.coverage` (Python coverage.py)
+- `lcov.info`
+- SonarQube export (もしあれば `sonar-report.json`)
+- CodeClimate の `.codeclimate.yml` と結果
+
+これらがあれば「テストカバレッジ × churn × complexity」の3軸分析ができる。なければ静かにスキップ。
+
 #### 設計思想の抽出 (git / GitHub)
 
 コードの「なぜ」はコードの中ではなく、**コミット履歴・Issue・PR** にある。以下で抽出する:
@@ -256,7 +345,24 @@ git log --oneline -10 -- path/to/module/key_file.ts
 - 設定ファイルの構造と各項目の説明
 - デプロイ構成 (CI/CD, Dockerfile等)
 
-#### § (N+4) — Developer Guide (開発ガイド)
+#### § (N+4) — Metrics & Health (コードの健康状態) ※Step 1.6 のツールが1つでも実行できた場合
+**Hotspot Analysis** — churn × complexity の相関でリスクの高い場所を特定:
+
+| File | Churn (6mo) | Complexity | Coupling | Risk |
+|---|---|---|---|---|
+| 具体例をツール出力から取って入れる |
+
+**Circular Dependencies** — madge / pydeps の出力から。各循環について該当ファイルへのリンクと「なぜ問題か」の解説付き。
+
+**Top N Complex Functions** — radon / gocyclo / eslintcc の上位から。関数名、ファイル:行、CC値、**このリポジトリの文脈での解釈**(どの機能に属する関数か、なぜ複雑になったか推測)。
+
+**Architecture Violations** — dependency-cruiser / import-linter が検出したレイヤ違反。違反の種類と、本来あるべき依存方向を図示。
+
+**Code Coverage × Risk**(カバレッジツール結果がある場合) — hotspot なのにカバレッジが低い場所を優先的に列挙。
+
+**何が計測できなかったか** — 実行できなかったツールは「このプロジェクトでは○○がインストールされていない/該当しない」と明記。推測で埋めない。
+
+#### § (N+5) — Developer Guide (開発ガイド)
 - セットアップ手順 (実際のコマンドをREADMEやスクリプトから引用)
 - ビルド・テスト・デプロイの方法
 - よくあるトラブルシューティング
@@ -300,6 +406,16 @@ graph TD
 - 「このファイルは〜を担当しています」のような薄い説明で終わらない。**具体的にどの関数がどう動くか**まで書く
 - コードの意図が不明な場合は「実装を見る限り〜だが、明示的なコメントはない」のように正直に書く
 - 各セクションの末尾に `.ask-block` で深掘り質問を配置する
+
+**Analyzer 結果の解釈 (Step 1.6 のツール出力がある場合):**
+- ツールの生数値だけ書くな。**必ずこのリポジトリの文脈で解釈する**
+- 相関を出す:
+  - churn (変更頻度) × complexity (複雑度) = **hotspot** (バグ・障害が出やすい場所)
+  - circular deps × その箇所の責務 = **設計負債の特定**
+  - architecture violations × 直近の変更 = **意図せずレイヤが崩れている兆候**
+- 各 finding には必ずファイルへのリンク (<code>&lt;span class="file-link"&gt;</code>) を付ける。クリックで確認できるようにする
+- 「なぜ問題か」を書く。「循環依存があります」ではなく「循環依存が <code>auth</code> モジュール内にあり、§ 03 で解説したセッション管理の責務分離を壊している」のように書く
+- ツールが動かなかった場合は正直に「○○がインストールされていないため測定できず」と書く。推測で埋めない
 
 ### Step 2.5: Detect GitHub remote
 
@@ -556,6 +672,18 @@ body.split .chat-panel{right:52%}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:var(--bg);padding:8px 18px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:0;transition:all .25s;z-index:2000}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
+/* risk badges for Metrics & Health */
+.risk-badge{display:inline-block;padding:2px 8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--rule);font-weight:600;font-family:var(--mono)}
+.risk-low{background:rgba(21,128,61,.12);color:var(--ok);border-color:var(--ok)}
+.risk-med{background:rgba(180,83,9,.12);color:#B45309;border-color:#B45309}
+.risk-high{background:rgba(194,65,12,.15);color:#C2410C;border-color:#C2410C;font-weight:700}
+.risk-crit{background:#C2410C;color:#fff;border-color:#C2410C;font-weight:700}
+.hotspot-row td{background:rgba(194,65,12,.06)}
+.fact-box{border-left:3px solid var(--accent);background:var(--bg-2);padding:10px 14px;margin:10px 0;font-size:13px}
+.fact-box .fact-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-weight:600;margin-bottom:4px;display:block}
+.intent-box{border-left:3px solid var(--mute);background:var(--bg);padding:10px 14px;margin:10px 0;font-size:13px;font-style:italic;color:var(--ink-soft)}
+.intent-box .intent-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);font-weight:600;margin-bottom:4px;display:block;font-style:normal}
+
 @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:20px}}
 </style>
 </head>
@@ -571,6 +699,7 @@ body.split .chat-panel{right:52%}
 <nav class="sidebar">
   <div class="sec-label">Documentation</div>
   <!-- Add .nav-link entries for each h2 section -->
+  <!-- Include: Overview, Architecture, Component Deep Dives, Design History, API Reference, Config, Metrics & Health, Developer Guide -->
   <div class="sec-label" style="margin-top:16px">Explore</div>
   <a class="nav-link" href="#file-tree">File Tree</a>
   <a class="nav-link" href="#file-reader">File Reader</a>
