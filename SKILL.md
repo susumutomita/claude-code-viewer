@@ -57,6 +57,39 @@ Use Glob and Read tools to understand the project:
 
 Collect this information before proceeding.
 
+### Step 1.5: Static analysis (推論ではなくツールで取る)
+
+依存関係・構造の分析はAIの推論ではなく、**実際のツールやコマンドで取得する**。Bash ツールで以下を実行し、結果をそのまま使う:
+
+```bash
+# ── JavaScript / TypeScript ──
+# import/require の依存グラフ
+npx madge --json src/ 2>/dev/null || grep -r "from ['\"]" --include="*.ts" --include="*.tsx" --include="*.js" -h | sed "s/.*from ['\"]//;s/['\"].*//" | sort -u
+
+# ── Python ──
+# import の依存グラフ
+grep -r "^import \|^from " --include="*.py" -h | sort -u
+# pip の依存ツリー
+pip list --format=json 2>/dev/null || cat requirements.txt 2>/dev/null || cat pyproject.toml 2>/dev/null
+
+# ── Go ──
+go mod graph 2>/dev/null
+
+# ── Rust ──
+cargo tree --depth 2 2>/dev/null
+
+# ── 共通: ディレクトリ構造 ──
+find . -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' -not -path '*/__pycache__/*' -not -path '*/venv/*' | head -300
+
+# ── 共通: git の活発なファイル (最近変更が多い = 重要) ──
+git log --since="3 months ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -30 2>/dev/null
+
+# ── 共通: コード行数 ──
+find . -type f \( -name "*.ts" -o -name "*.py" -o -name "*.go" -o -name "*.rs" -o -name "*.java" \) -not -path '*/node_modules/*' -not -path '*/.git/*' | xargs wc -l 2>/dev/null | sort -rn | head -20
+```
+
+**これらの結果を元に**図や説明を書く。ツールが使えない環境でも `grep` ベースのフォールバックで import 関係は取れる。AIの推論で依存矢印を引くのは最終手段。
+
 ### Step 2: Analyze — DeepWiki-style structured output
 
 Generate the wiki content in **Japanese**. Follow this exact section structure. Each section must be thorough — read actual source files, quote specific code, and explain the *why* not just the *what*.
