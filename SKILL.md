@@ -90,6 +90,45 @@ find . -type f \( -name "*.ts" -o -name "*.py" -o -name "*.go" -o -name "*.rs" -
 
 **これらの結果を元に**図や説明を書く。ツールが使えない環境でも `grep` ベースのフォールバックで import 関係は取れる。AIの推論で依存矢印を引くのは最終手段。
 
+#### 設計思想の抽出 (git / GitHub)
+
+コードの「なぜ」はコードの中ではなく、**コミット履歴・Issue・PR** にある。以下で抽出する:
+
+```bash
+# ── コミット履歴: 設計判断が記録されている ──
+# 直近100コミットのメッセージ (設計変更の経緯がわかる)
+git log --oneline -100 2>/dev/null
+
+# 大きな変更があったコミット (リファクタ・設計変更の特定)
+git log --shortstat -30 --pretty=format:"%h %s" 2>/dev/null
+
+# 特定ファイルの変更履歴 (なぜこのファイルが今の形になったか)
+# → 重要ファイルごとに実行する
+# git log --oneline -10 -- path/to/important/file.ts
+
+# ── GitHub Issues: 要件・バグ・議論 ──
+gh issue list --state all --limit 50 --json number,title,labels,state 2>/dev/null
+
+# 重要そうなIssueの本文を読む (design, architecture, breaking ラベル等)
+# → タイトルから重要なものを選んで:
+# gh issue view NUMBER --json title,body,comments
+
+# ── GitHub PRs: 実装判断・レビューコメント ──
+gh pr list --state merged --limit 30 --json number,title,labels 2>/dev/null
+
+# 重要なPRの説明とレビューを読む
+# → タイトルから重要なものを選んで:
+# gh pr view NUMBER --json title,body,reviews,comments
+```
+
+これらの結果を使って、wiki に **§ Design History (設計経緯)** セクションを追加する:
+- プロジェクトの主要な設計判断とその背景 (Issue/PRから)
+- 大きなリファクタリングの経緯 (コミット履歴から)
+- 既知の技術的負債や今後の方針 (open Issueから)
+- 「なぜこうなっているか」をコミットメッセージやPR説明から引用
+
+**AIの推測ではなく、開発者自身の言葉を引用する。** "コミット abc123 で「パフォーマンス改善のためキャッシュ層を追加」とある" のように、ソースを明示する。
+
 #### コードロジックの事実抽出
 
 ロジックの「意図」はAIの仕事だが、**事実部分はツールで取れる**。以下を実行してからAIが解釈する:
@@ -158,17 +197,25 @@ Generate the wiki content in **Japanese**. Follow this exact section structure. 
 - **他モジュールとの関係**: どこから呼ばれ、何に依存しているか
 - **注意点・設計判断**: なぜこの実装になっているかの背景
 
-#### § (N+1) — API Reference (APIリファレンス) ※APIがある場合
+#### § (N+1) — Design History (設計経緯) ※git/GitHub が使える場合
+コミット履歴・Issue・PRから抽出した設計判断の経緯。AIの推測ではなく開発者の言葉を引用:
+- 主要な設計判断のタイムライン (いつ、誰が、なぜ)
+- 大きなリファクタリングや方針転換の背景 (PRの説明やIssueの議論から引用)
+- 既知の技術的負債 (open Issue から)
+- 今後の方針・ロードマップ (Issue/PR のラベルやマイルストーンから)
+- 各引用には `コミット hash` `Issue #番号` `PR #番号` を明記してリンクする
+
+#### § (N+2) — API Reference (APIリファレンス) ※APIがある場合
 - エンドポイント一覧表 (メソッド / パス / 説明 / 認証)
 - リクエスト/レスポンスのスキーマ
 - 認証・認可の仕組み
 
-#### § (N+2) — Configuration & Environment (設定)
+#### § (N+3) — Configuration & Environment (設定)
 - 環境変数一覧表 (変数名 / 説明 / デフォルト値)
 - 設定ファイルの構造と各項目の説明
 - デプロイ構成 (CI/CD, Dockerfile等)
 
-#### § (N+3) — Developer Guide (開発ガイド)
+#### § (N+4) — Developer Guide (開発ガイド)
 - セットアップ手順 (実際のコマンドをREADMEやスクリプトから引用)
 - ビルド・テスト・デプロイの方法
 - よくあるトラブルシューティング
