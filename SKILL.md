@@ -22,6 +22,14 @@ description: Generate a DeepWiki-style interactive code documentation site for t
 
 あなたはこのwikiを生成するエージェントである。「それっぽいドキュメント」を作るのではなく、**人が毎回AIに聞く質問に先回りして全部答えた状態**を作ることがゴール。
 
+### なぜこれが必要か
+
+AIを使ったコードリーディングは、聞く側のスキルに依存する。ベテランは `git log` を叩き、import を追い、Issue を読んで的確に質問する。ジュニアは「このファイル何？」しか聞けない。同じAIを使っても得られる理解の深さが全く違う。
+
+codewiki はベテランの調査テクニック (ctags, grep, git log, gh issue/pr, dependency graph) をスキルに焼き込んである。誰が `/codewiki` を叩いても、シニアエンジニアがフルに調査した結果と同等の出力が得られる。
+
+**AIを使うスキルの民主化。** これがcodewikiの存在理由。
+
 ## Modes
 
 Check the user's input for mode flags. The mode changes what content to emphasize:
