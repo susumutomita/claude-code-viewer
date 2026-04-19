@@ -1,87 +1,71 @@
 # claude-code-viewer
 
-**Any repo → AI-powered code wiki in one command.**
+**Any repo → AI-powered code wiki. One command.**
 
-DeepWiki-style code documentation with native Claude Code integration. Every run is a **full rebuild from source** — no stale docs, no diff residue.
+DeepWiki-style code documentation with **native Claude Code integration**. Every run is a full rebuild from scratch — no stale docs, no diff residue.
 
-## What it does
-
-1. **Scans** your project structure, detects tech stack, finds key files
-2. **Analyzes** each major component deeply using Claude Code (`claude -p`)
-3. **Generates** a complete static site with architecture docs
-4. **Serves** it with interactive AI features:
-   - **Chat widget** — ask anything about the codebase
-   - **Right-click** → "Ask Claude Code" on any selected text
-   - **Ask button** — one-click deep-dive on suggested prompts
-   - **File Reader** — browse source code, select & ask
-
-## Quick Start
+## Install
 
 ```bash
-# Generate wiki for current project
-./generate
-
-# Generate for a specific repo
-./generate /path/to/any/repo
-
-# Just serve previously generated docs
-./generate --serve-only
-
-# Custom port
-./generate --port 3000
-
-# Generate without starting server
-./generate --no-serve
+npx skills add susumutomita/claude-code-viewer
 ```
 
-## Requirements
+## Usage
 
-- Python 3.8+
-- [Claude Code](https://claude.ai/code) CLI installed (`claude` command available)
-
-No other dependencies.
-
-## How it works
+In Claude Code (terminal or VSCode), just type:
 
 ```
-./generate /path/to/repo
-    │
-    ├── [1] Scan project structure
-    │     → detect tech stack, key files, major directories
-    │
-    ├── [2] Deep analysis with Claude Code (parallel)
-    │     → claude -p "analyze this directory..."  ×N
-    │     → overview, per-directory, patterns, dependencies, dev guide
-    │
-    ├── [3] Generate static site
-    │     → .codewiki/index.html (self-contained)
-    │
-    └── [4] Serve with API layer
-          → POST /api/ask  → claude -p (chat)
-          → GET /api/file  → read source files (file reader)
+/codewiki
 ```
+
+That's it. Claude Code will:
+
+1. Scan your entire project structure
+2. Read and deeply analyze every major component
+3. Generate a self-contained HTML wiki at `.codewiki/index.html`
+4. Start a local server and open it in your browser
+
+### Interactive Features
+
+| Feature | How |
+|---|---|
+| **Chat** | Click the purple button (bottom-right) → ask anything |
+| **Right-click** | Select any text → right-click → "Ask Claude Code" |
+| **Ask button** | Click "Ask" on suggested prompts for instant deep-dive |
+| **File Reader** | Browse source code in-browser, select & right-click to ask |
+
+### Re-generate
+
+Run `/codewiki` again at any time. It rebuilds **everything from scratch** — the wiki always matches the current state of your code.
 
 ## Why full rebuild?
 
-> "差分更新は AI はうまくない"
+Incremental doc updates don't work well with AI. Sections get stale, renamed files leave ghost references, and context drift accumulates. Full rebuild means:
 
-Incremental doc updates leave stale sections, miss renamed files, and accumulate drift. This tool regenerates **everything from scratch** every time. Run it on a schedule or after major changes — the docs are always fresh and consistent.
+- **Zero stale content** — every section is freshly analyzed
+- **Consistent quality** — no "this section was updated but that one wasn't"
+- **Simple mental model** — run the command, get current docs
 
 ## vs DeepWiki
 
-| | DeepWiki | claude-code-viewer |
+| | DeepWiki | /codewiki |
 |---|---|---|
 | AI analysis | Static generation | Static + **live AI chat** |
 | Right-click → ask | No | Yes |
 | Chat with codebase | No | Yes (Claude Code native) |
 | File browsing | Limited | Full reader with AI context |
 | Update strategy | Unknown | Full rebuild (no stale docs) |
+| Integration | Standalone web app | **Claude Code skill** (seamless) |
 | Self-hosted | No | Yes (localhost, zero deps) |
-| Works offline | No | Yes (with Claude Code CLI) |
+
+## Requirements
+
+- [Claude Code](https://claude.ai/code) CLI
+- Python 3.8+ (for the local server)
 
 ## Output
 
-Generated docs are written to `<project>/.codewiki/index.html`. Add `.codewiki` to your `.gitignore` if you don't want to commit generated docs.
+Generated docs are written to `.codewiki/index.html`. Add `.codewiki/` to your `.gitignore`.
 
 ## License
 
